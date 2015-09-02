@@ -1,0 +1,132 @@
+<html>
+<head>
+  <title>Add Widget</title>
+  <script src="/wp-admin/load-scripts.php?c=0&load%5B%5D=jquery-core"></script>
+  <script>
+	// use AJAX to get the widget list
+	jQuery(document).ready(tkWidgetAnywhere);
+	
+	function tkWidgetAnywhere($)
+	{
+		var $cancel = $('#cancel'),
+		$insert = $('#insert'),
+		$insert_another = $('#insert-another'),
+		$widget_anywhere_form = $('#widget-anywhere-form'),
+		$select_widget = $('#select-widget');
+		
+		xhr = $.ajax({ 
+			type: 'POST',
+			url: window.parent.widgetanywhere.ajaxurl,
+			data: {action: 'WidgetAnywhere_GetWidgets'},
+			success: function(result){
+				var o = '';
+				result= JSON.parse(result);
+				$.each(result, function(sidebar, widgets) 
+				{
+					if (!widgets.length) return;
+					o += '<optgroup label="' + sidebar + '">';
+					$.each(widgets, function(key, widget) 
+					{
+						var ti = (widget.title.length) ? ' (' + widget.title + ')' : '' ;
+						o += '<option value="' + widget.id + '" data-title="'+widget.title+'">' + widget.id + ti + '</option>';
+					});
+					o += '</optgroup>';
+				});
+				$select_widget.append(o);
+			},
+			complete: function()
+			{
+				// maybe set ajax running boolean flag to false?      
+			}
+		});
+		
+
+		$widget_anywhere_form.submit(function(e)
+		{
+			var $select_widget = $('#select-widget'),
+			$select_option = $('#select-widget option:selected'),
+			shortcode = '[widget-anywhere';
+			shortcode += ' id="' + $select_widget.val() + '" title="' + $select_option.attr('data-title') + '"]';
+
+			// inserts the shortcode into the active editor
+			window.parent.tinyMCE.activeEditor.execCommand('mceInsertContent', 0, shortcode);
+			//close
+			window.parent.tinyMCE.activeEditor.windowManager.close();
+			e.preventDefault;
+			return false;
+		});
+		
+		function insert_shortcode()
+		{
+			var $select_widget = $('#select-widget'),
+			$select_option = $('#select-widget option:selected'),
+			shortcode = '[widget-anywhere';
+			
+			if ($select_widget[0].selectedIndex == 0)
+			{
+				$('#messages').html('No widget selected');
+				window.setTimeout(function(){$('#messages').hide();}, 3000);
+				return;
+			}
+			
+			shortcode += ' id="' + $select_widget.val() + '" title="' + $select_option.attr('data-title') + '"]';
+
+			// inserts the shortcode into the active editor
+			window.parent.tinyMCE.activeEditor.execCommand('mceInsertContent', 0, shortcode);
+		}
+
+		$insert.click(function()
+		{
+			//$widget_anywhere_form.trigger('submit');
+			insert_shortcode();
+			window.parent.tinyMCE.activeEditor.windowManager.close();
+		});
+		
+		$insert_another.click(function()
+		{
+			insert_shortcode();
+		});
+
+		$cancel.click(function()
+		{
+			window.parent.tinyMCE.activeEditor.windowManager.close();
+		});
+	}
+	</script>
+	<style>
+	body, select, button {font-family:'Open Sans', sans-serif;font-size:14px;color:rgb(68,68,68);}
+	select {border:solid 1px #cccccc;border-radius:0;}
+	button {height:30px;font-size:15px;}
+	#insert-another {margin-left:5px;}
+	#messages {color:#2d90e6;font-size:18px;}
+	.mceActionPanel {position:absolute;bottom:0;left:0;width:100%;padding:5px;box-sizing:border-box;}
+	</style>
+</head>
+<body>
+  <div>
+    <form id="widget-anywhere-form">
+        <div>
+          <h2>Available widgets</h2>
+          <p>
+            <label for="select-widget">Widget: </label>
+            <select id="select-widget">
+              <option>select a widget</option>
+            </select>
+          </p>
+        </div>
+    </form>
+    <div id="messages"></div>
+    <div class="mceActionPanel">
+      <div style="float: left">
+        <button id="cancel">Cancel</button>
+      </div>
+      <div style="float: right">
+        <button id="insert-another">Insert Another</button>
+      </div>
+      <div style="float: right">
+        <button id="insert">Insert</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
